@@ -1,56 +1,66 @@
 '''
 Description: 
 Author: CrayonXiaoxin
-Date: 2024-05-31 15:26:04
-LastEditTime: 2024-09-09 14:29:23
+Date: 2024-09-10 09:49:17
+LastEditTime: 2024-09-12 15:04:06
 LastEditors:  
 '''
 import os
 import openpyxl
-# open file
-# path是文件所在位置
-path = r"C:\\Users\\Tomato\\OneDrive\\桌面"
-os.chdir(path)
-# 括号里面填文件名
-workbook = openpyxl.load_workbook("2.xlsx")
-print(workbook.sheetnames)
 
-# get Sheet1 information
-sheet = workbook['1']
-rows = sheet.max_row
-column = sheet.max_column
+if __name__ == '__main__':
+    path = os.path.dirname(__file__)
+    os.chdir(path)
+    print(path)
+    # 检查文件是否存在
+    file_name = input("请输入文件名：")
+    if not os.path.exists(file_name):
+        raise FileNotFoundError(f"文件 {file_name} 不存在！")
 
-# get top name in Sheet1
-topName = []
-for i in range(1,column+1):
-    topName.append(sheet.cell(1,i).value)
+    workbook = openpyxl.load_workbook(file_name)
+    print(workbook.sheetnames)
+    sheet1 = input("请输入主表名字：")
+    # 获取 Sheet1（假设其名字是 '1'）
+    if sheet1 not in workbook.sheetnames:
+        raise ValueError("找不到名为 %s 的工作表"%sheet1)
 
+    sheet = workbook[sheet1]
+    rows = sheet.max_row
+    column = sheet.max_column
 
-# 如果想要将Sheet1中的数据按照第二列的值进行分类，并分别保存到不同的sheet中，可以按照以下步骤进行：
-# names = []
-# for i in range(1, rows+1):
-#     names.append(sheet.cell(i, 2).value)
-# names = list(set(names))
-# 如果想要自己制定名字,可以修改names列表
-names = ['苏秦海', '林新星', '雷霆']
-
-for name in names:
-    workbook.create_sheet(name+'')
-
+    # 获取表头
+    topName = []
+    for i in range(1, column+1):
+        topName.append(sheet.cell(1, i).value)
+    names = []
+    # 自定义分类名称
+    for i in range(1,1000):
+        name = input("请输入要整理的名字：(如果想结束请输入#)")
+        if name == '#':
+            break
+        names.append(name)
     
-# workbook.save('test.xlsx')
 
-# get all values in Sheet1 ans save
-for i in range(1,rows+1):
-    name = sheet.cell(i,2).value
-    if name in names:
-        viceSheet = workbook[name+'']
-        values = []
-        for j in range(1,column+1):
-            values.append(sheet.cell(i,j).value)
-        vicerows = viceSheet.max_row
-        for k in range(1,column+1):
-            viceSheet.cell(vicerows+1,k,values[k-1])
-        for l in range(1,column+1):
-            viceSheet.cell(1,l,topName[l-1])
-workbook.save('2.xlsx')
+    # 创建新的 Sheet
+    for name in names:
+        if name not in workbook.sheetnames:
+            workbook.create_sheet(name)
+
+    # 按分类写入数据
+    for i in range(2, rows+1):  # 从第2行开始读取，因为第1行是表头
+        name = sheet.cell(i, 2).value
+        if name in names:
+            viceSheet = workbook[name]
+            values = [sheet.cell(i, j).value for j in range(1, column+1)]
+            vicerows = viceSheet.max_row
+            if vicerows == 0:
+                # 如果新建的表是空的，首先写入表头
+                for l in range(1, column+1):
+                    viceSheet.cell(1, l, topName[l-1])
+                vicerows = 1
+            for k in range(1, column+1):
+                viceSheet.cell(vicerows + 1, k, values[k-1])
+
+    # 保存并关闭文件
+    workbook.save(file_name)
+    workbook.close()
